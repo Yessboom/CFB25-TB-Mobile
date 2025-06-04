@@ -1,4 +1,3 @@
-// src/pages/RosterTemplates.tsx
 import { Roster, User } from '@/types/FullTypes';
 import { router } from 'expo-router';
 import React, { useEffect, useState } from 'react';

@@ -1,4 +1,4 @@
-import { User as UserType } from '@/types/Users';
+import { User as UserType } from '@/types/FullTypes';
 import { AlertCircle, CheckCircle, Eye, EyeOff, Lock, User } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 
