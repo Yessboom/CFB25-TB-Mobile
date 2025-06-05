@@ -1,6 +1,6 @@
 import * as ImagePicker from 'expo-image-picker';
 import { useState } from 'react';
-import { ImageSourcePropType, StyleSheet, View } from 'react-native';
+import { ImageSourcePropType, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 
 import Button from '@/components/Button';
@@ -11,6 +11,8 @@ import IconButton from '@/components/IconButton';
 import ImageViewer from '@/components/ImageViewer';
 
 import EmojiSticker from '@/components/EmojiSticker';
+import { testCorsHeaders, testOptions } from '@/helpers/newtest';
+import { testLogin, testLoginWithoutCredentials } from '@/helpers/testlogin';
 
 
 const PlaceholderImage = require('@/assets/images/background-image.png');
@@ -76,6 +78,71 @@ export default function Index() {
       <EmojiPicker isVisible={isModalVisible} onClose={onModalClose}>
         <EmojiList onSelect={setPickedEmoji} onCloseModal={onModalClose} />
       </EmojiPicker>
+
+      {/* Debug button - only show in development */}
+      { (
+        <TouchableOpacity 
+          onPress={testLogin}
+          style={{
+            position: 'absolute',
+            top: 50,
+            right: 20,
+            backgroundColor: 'red',
+            padding: 10,
+            borderRadius: 5
+          }}
+        >
+          <Text style={{ color: 'white' }}>Test Login</Text>
+        </TouchableOpacity>
+      )}
+            { (
+        <TouchableOpacity 
+          onPress={testLoginWithoutCredentials}
+          style={{
+            position: 'absolute',
+            top: 10,
+            right: 20,
+            backgroundColor: 'red',
+            padding: 10,
+            borderRadius: 5
+          }}
+        >
+          <Text style={{ color: 'white' }}>Test Login without cred</Text>
+        </TouchableOpacity>
+      )}
+
+                  { (
+        <TouchableOpacity 
+          onPress={testCorsHeaders}
+          style={{
+            position: 'absolute',
+            top: 90,
+            right: 20,
+            backgroundColor: 'red',
+            padding: 10,
+            borderRadius: 5
+          }}
+        >
+          <Text style={{ color: 'white' }}>Test Cors header</Text>
+        </TouchableOpacity>
+      )}
+
+                        { (
+        <TouchableOpacity 
+          onPress={testOptions}
+          style={{
+            position: 'absolute',
+            top: 150,
+            right: 20,
+            backgroundColor: 'red',
+            padding: 10,
+            borderRadius: 5
+          }}
+        >
+          <Text style={{ color: 'white' }}>Test Options</Text>
+        </TouchableOpacity>
+      )}
+      
     </View>
   );
 }

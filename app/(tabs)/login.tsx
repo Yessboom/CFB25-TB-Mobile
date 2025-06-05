@@ -26,7 +26,7 @@ const LoginPage = () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/user`, {
         method: 'GET',
-        //credentials: 'include', //  not working rn so removed
+        credentials: 'include', //  not working rn so removed
         headers: {
           'Content-Type': 'application/json',
         },
@@ -69,7 +69,7 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const endpoint = isLogin ? '/api/auth/login' : '/api/auth/register';
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method: 'POST',
-        //credentials: 'include', 
+        credentials: 'include', 
         headers: {
           'Content-Type': 'application/json',
         },
@@ -96,7 +96,7 @@ const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/logout`, {
         method: 'POST',
-        //credentials: 'include',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },

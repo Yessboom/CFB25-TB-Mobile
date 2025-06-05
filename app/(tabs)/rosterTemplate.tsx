@@ -12,7 +12,7 @@ const api = {
   async getUser(): Promise<User | null> {
     try {
       const response = await fetch(`${API_BASE}/auth/user`, {
-        //credentials: 'include'
+        credentials: 'include'
       });
       const data = await response.json();
       return data.success ? data.user : null;
@@ -25,7 +25,7 @@ const api = {
   async getTemplates(): Promise<Roster[]> {
     try {
       const response = await fetch(`${API_BASE}/rosters/templates`, {
-        //credentials: 'include'
+        credentials: 'include'
       });
       const data = await response.json();
       return data.success ? data.templates : [];
@@ -42,7 +42,7 @@ const api = {
         headers: {
           'Content-Type': 'application/json'
         },
-        //credentials: 'include',
+        credentials: 'include',
         body: JSON.stringify({ templateId, rosterName })
       });
       const data = await response.json();
