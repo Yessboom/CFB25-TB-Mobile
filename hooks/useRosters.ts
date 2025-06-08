@@ -24,8 +24,12 @@ export const useRosters = () => {
   };
 
   const createRoster = async (templateId: string, rosterName: string) => {
+    console.log('🔄 Creating roster with:', { templateId, rosterName }); // Add debug log
+    
     const formData: CreateRosterForm = { templateId, rosterName };
     const response = await rosterService.createRosterFromTemplate(formData);
+    
+    console.log('📡 Create roster response:', response); // Add debug log
     
     if (response.success) {
       // Refresh the rosters list
@@ -113,34 +117,40 @@ export const useTemplates = () => {
 
 export const useRoster = (rosterId: string | null) => {
   const [roster, setRoster] = useState<Roster | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRoster = async (id: string) => {
-    setLoading(true);
-    setError(null);
-    
-    const response = await rosterService.getRoster(id);
-    
-    if (response.success && response.roster) {
-      setRoster(response.roster);
-    } else {
-      setError(response.error || 'Failed to fetch roster');
-    }
-    
-    setLoading(false);
-  };
-
   useEffect(() => {
-    if (rosterId) {
-      fetchRoster(rosterId);
-    }
+    const fetchRoster = async () => {
+      if (!rosterId) {
+        setError('No roster ID provided');
+        setLoading(false);
+        return;
+      }
+
+      console.log('🔍 Fetching roster with ID:', rosterId); // Add debug log
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await rosterService.getRoster(rosterId);
+        console.log('📡 Roster API response:', response); // Add debug log
+        
+        if (response.success && response.roster) {
+          setRoster(response.roster);
+        } else {
+          setError(response.error || 'Failed to fetch roster');
+        }
+      } catch (err) {
+        console.error('❌ Roster fetch error:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch roster');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRoster();
   }, [rosterId]);
 
-  return {
-    roster,
-    loading,
-    error,
-    fetchRoster
-  };
+  return { roster, loading, error };
 };
