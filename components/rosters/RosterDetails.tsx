@@ -2,6 +2,7 @@ import PlayerInList from '@/components/players/PlayerInList'; // Import the comp
 import { usePlayerUpdate, useRosterDownload } from '@/hooks/usePlayers';
 import { useRoster } from '@/hooks/useRosters';
 import { Player } from '@/types/FullTypes';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
@@ -11,6 +12,7 @@ interface RosterDetailScreenProps {
 }
 
 const RosterDetailScreen: React.FC<RosterDetailScreenProps> = ({ rosterId, onBack }) => {
+  const router = useRouter();
   const { roster, loading, error } = useRoster(rosterId);
   const { updateBasicInfo, updateSkill, loading: updateLoading } = usePlayerUpdate();
   const { download, downloading } = useRosterDownload();
@@ -49,7 +51,8 @@ const RosterDetailScreen: React.FC<RosterDetailScreenProps> = ({ rosterId, onBac
 
   const handlePlayerPress = (playerId: string) => {
     console.log('Player pressed:', playerId);
-    // You could navigate to a detailed player page here
+    // Use player.id instead of player.playerId
+    router.push(`/playerDetails?playerId=${playerId}`);
   };
 
   const confirmEdit = async () => {
@@ -78,8 +81,8 @@ const RosterDetailScreen: React.FC<RosterDetailScreenProps> = ({ rosterId, onBac
   const renderPlayer = ({ item }: { item: Player }) => (
     <PlayerInList
       player={item}
-      onEditField={handleEditField}
-      onPlayerPress={handlePlayerPress}
+      onEditField={(playerId, field, currentValue, type) => handleEditField(playerId, field, currentValue, type)}
+      onPlayerPress={(playerId) => handlePlayerPress(playerId)}
     />
   );
 
@@ -138,7 +141,7 @@ const RosterDetailScreen: React.FC<RosterDetailScreenProps> = ({ rosterId, onBac
       
       <FlatList
         data={roster.players || []}
-        keyExtractor={(item) => item.playerId}
+        keyExtractor={(item) => item.id} // Use item.id for key
         renderItem={renderPlayer}
         contentContainerStyle={styles.list}
       />
