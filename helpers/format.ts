@@ -61,3 +61,18 @@ export function formatWeight(weight: number | undefined): string {
   const kg = Math.round((160 + weight) * 0.453592);
   return `${kg} kg`;
 }
+
+
+export const getSkillBackgroundColor = (value: number): string => {
+  if (value >= 90) return "#C8E6C9"; // Green for elite skills
+  if (value >= 80) return "#BBDEFB"; // Blue for good skills
+  if (value >= 70) return "#FFF9C4"; // Yellow for average skills
+  return "#FFCDD2"; // red
+};
+
+export const getSkillValueColor = (value: number): string => {
+  if (value >= 90) return "#2E7D32"; // Light green for elite skills
+  if (value >= 80) return "#1565C0"; // Light blue for good skills
+  if (value >= 70) return "#F9A825"; // Light yellow for average skills
+  return "#C62828"; // 
+}
