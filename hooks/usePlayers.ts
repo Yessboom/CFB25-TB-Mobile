@@ -1,6 +1,7 @@
 import { downloadRoster } from '@/api/download';
-import { updatePlayerBasicInfo, updatePlayerSkill } from '@/api/player';
-import { useCallback, useState } from 'react';
+import { playerService } from '@/api/player';
+import { Player } from '@/types/FullTypes';
+import { useCallback, useEffect, useState } from 'react';
 
 export function usePlayerUpdate() {
   const [loading, setLoading] = useState(false);
@@ -15,7 +16,7 @@ export function usePlayerUpdate() {
     setError(null);
     
     try {
-      const result = await updatePlayerBasicInfo(playerId, field, value);
+      const result = await playerService.updateBasicInfo(playerId, field, value);
       
       if (!result.success) {
         setError(result.error || 'Update failed');
@@ -37,7 +38,7 @@ export function usePlayerUpdate() {
     setError(null);
     
     try {
-      const result = await updatePlayerSkill(playerId, skillName, skillValue);
+      const result = await playerService.updateSkill(playerId, skillName, skillValue);
       
       if (!result.success) {
         setError(result.error || 'Skill update failed');
@@ -69,3 +70,57 @@ export function useRosterDownload() {
 
   return { download, downloading };
 }
+
+export function usePlayer(playerId: string) {
+  const [player, setPlayer] = useState<Player | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchPlayer = useCallback(async () => {
+    if (!playerId) {
+      setPlayer(null);
+      setLoading(false);
+      setError('No player ID provided');
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+    
+    try {
+      console.log('🔍 Fetching player with ID:', playerId);
+      const result = await playerService.getPlayer(playerId); // Use the service
+      
+      if (!result.success) {
+        setError(result.error || 'Failed to fetch player');
+        setPlayer(null);
+        return;
+      }
+      
+      console.log('📡 Player data received:', result.data);
+      setPlayer(result.data || null);
+    } catch (err) {
+      console.error('❌ Player fetch error:', err);
+      setError(err instanceof Error ? err.message : 'Network error');
+      setPlayer(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [playerId]);
+
+  useEffect(() => {
+    fetchPlayer();
+  }, [fetchPlayer]);
+
+  const refetch = useCallback(() => {
+    fetchPlayer();
+  }, [fetchPlayer]);
+
+  return { 
+    player, 
+    loading, 
+    error, 
+    refetch 
+  };
+}
+
