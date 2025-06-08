@@ -1,9 +1,10 @@
+import ImageViewer from '@/components/ImageViewer';
 import { getPositionName, getSkillBackgroundColor, getSkillValueColor } from '@/helpers/format';
 import { getOverall } from '@/helpers/OverallCalculator';
 import { Player } from '@/types/FullTypes';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import ImageViewer from '../ImageViewer';
 import ImpactPlayer from './ImpactPlayer';
 
 interface PlayerInListProps {
@@ -17,12 +18,23 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
   onEditField, 
   onPlayerPress 
 }) => {
-  
+  const router = useRouter();
+
+  const handlePlayerPress = () => {
+    if (onPlayerPress) {
+      // Pass player.id instead of player.playerId
+      onPlayerPress(player.id);
+    } else {
+      // Default navigation using player.id
+      router.push(`/playerDetails?playerId=${player.id}`);
+    }
+  };
+
   const renderSkillItem = (skillName: string, skillValue: number) => (
     <TouchableOpacity 
       key={skillName}
       style={[styles.skillItem, { backgroundColor: getSkillBackgroundColor(skillValue) }]}
-      onPress={() => onEditField?.(player.playerId, skillName.toLowerCase(), skillValue, 'skill')}
+      onPress={() => onEditField?.(player.id, skillName.toLowerCase(), skillValue, 'skill')} // Use player.id
     >
       <Text style={[styles.skillName, { color: getSkillValueColor(skillValue) }]}>
         {skillName}
@@ -35,24 +47,38 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
 
   return (
     <View style={styles.playerCard}>
-      {/* Player Header */}
-      <View style={styles.playerHeader}>
-        <TouchableOpacity onPress={() => onPlayerPress?.(player.playerId)}>
-          <Text style={styles.playerName}>
-            {player.firstName} {player.lastName || 'Unnamed Player'}
-          </Text>
-        </TouchableOpacity>
-        <Text style={styles.playerSubtitle}>
-          {getPositionName(player.position)} • Overall: {getOverall(player) || 'N/A'}
-        </Text>
-        <Text style={styles.playerId}>ID: {player.playerId}</Text>
-      </View>
+      {/* Player Header - Clickable */}
+      <TouchableOpacity style={styles.playerHeader} onPress={handlePlayerPress}>
+        <View style={styles.nameAndImage}>
+          <View style={styles.playerInfo}>
+            <View style={styles.nameAndImpact}>
+              <Text style={styles.playerName}>
+                {player.firstName} {player.lastName || 'Unnamed Player'}
+              </Text>
+              <ImpactPlayer isImpact={player.isImpactPlayer} />
+            </View>
+            <Text style={styles.playerSubtitle}>
+              {getPositionName(player.position)} • Overall: {getOverall(player) || 'N/A'}
+            </Text>
+            <Text style={styles.playerId}>ID: {player.id}</Text> {/* Display player.id */}
+          </View>
+          
+          {player.portraitImage && (
+            <ImageViewer
+              imgSource={player.portraitImage}
+              style={styles.playerImage}
+              showPlaceholder={false}
+            />
+          )}
+        </View>
+        <Text style={styles.tapHint}>Tap for details →</Text>
+      </TouchableOpacity>
       
       {/* Basic Info */}
       <View style={styles.playerBasicInfo}>
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.playerId, 'position', player.position || '', 'basic')}
+          onPress={() => onEditField?.(player.id, 'position', player.position || '', 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Position:</Text>
           <Text style={styles.infoValue}>{getPositionName(player.position)}</Text>
@@ -60,7 +86,7 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
         
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.playerId, 'age', player.age || 0, 'basic')}
+          onPress={() => onEditField?.(player.id, 'age', player.age || 0, 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Age:</Text>
           <Text style={styles.infoValue}>{player.age || 'N/A'}</Text>
@@ -68,56 +94,25 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
 
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.playerId, 'jerseyNumber', player.jerseyNumber || 0, 'basic')}
+          onPress={() => onEditField?.(player.id, 'jerseyNumber', player.jerseyNumber || 0, 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Jersey #:</Text>
           <Text style={styles.infoValue}>{player.jerseyNumber || 'N/A'}</Text>
         </TouchableOpacity>
 
-        <ImpactPlayer
-        isImpact = {player.isImpactPlayer}
-        />
-
-        <TouchableOpacity 
-          style={styles.infoItem}
-        >
-          <Text style={styles.infoLabel}>PlayerImage #:</Text>
-          <Text style={styles.infoValue}>{player.portraitImage || 'N/A'}</Text>
-        </TouchableOpacity>
-        <ImageViewer
-            imgSource={player.portraitImage}
-            style={{ width: 100, height: 100, borderRadius: 8, marginTop: 8 }}
-
-        />
-
-        
-
-        
 
       </View>
       
-      {/* Skills Section */}
+      {/* Key Skills Section */}
       <View style={styles.skillsSection}>
-        <Text style={styles.skillsTitle}>Skills:</Text>
+        <Text style={styles.skillsTitle}>Key Skills:</Text>
         <View style={styles.skillsGrid}>
-          {getOverall(player) !== undefined && 
-            renderSkillItem('Overall', getOverall(player))}
-          {player.speed !== undefined && 
-            renderSkillItem('Speed', player.speed)}
-          {player.acceleration !== undefined && 
-            renderSkillItem('Acceleration', player.acceleration)}
-          {player.agility !== undefined && 
-            renderSkillItem('Agility', player.agility)}
-          {player.strength !== undefined && 
-            renderSkillItem('Strength', player.strength)}
-          {player.awareness !== undefined && 
-            renderSkillItem('Awareness', player.awareness)}
-          {player.catching !== undefined && 
-            renderSkillItem('Catching', player.catching)}
-          {player.carrying !== undefined && 
-            renderSkillItem('Carrying', player.carrying)}
-          {player.trucking !== undefined && 
-            renderSkillItem('Trucking', player.trucking)}
+          {player.speed !== undefined && renderSkillItem('Speed', player.speed)}
+          {player.acceleration !== undefined && renderSkillItem('Acceleration', player.acceleration)}
+          {player.agility !== undefined && renderSkillItem('Agility', player.agility)}
+          {player.strength !== undefined && renderSkillItem('Strength', player.strength)}
+          {player.awareness !== undefined && renderSkillItem('Awareness', player.awareness)}
+          {player.catching !== undefined && renderSkillItem('Catching', player.catching)}
         </View>
       </View>
     </View>
@@ -211,6 +206,32 @@ const styles = StyleSheet.create({
   skillValue: {
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  nameAndImage: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  playerInfo: {
+    flex: 1,
+    marginRight: 12,
+  },
+  nameAndImpact: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  playerImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+  },
+  tapHint: {
+    fontSize: 12,
+    color: '#007bff',
+    marginTop: 4,
+    textAlign: 'right',
   },
 });
 
