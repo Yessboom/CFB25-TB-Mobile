@@ -67,6 +67,7 @@ class RosterService {
 
   // GET /api/rosters/[rosterId] - Get specific roster
   async getRoster(rosterId: string): Promise<RosterResponse> {
+    console.log('Fetching roster with ID:', rosterId); // Debug log
     const response = await this.makeRequest<{ roster: Roster }>(`/api/rosters/${rosterId}`);
     return {
       success: response.success,
