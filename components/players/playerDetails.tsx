@@ -1,10 +1,12 @@
 import ImageViewer from '@/components/ImageViewer';
+import { EditModal, ErrorModal, SuccessModal } from '@/components/SpecificModal';
 import { formatHeight, formatWeight, getPositionName, getSkillBackgroundColor, getSkillValueColor } from '@/helpers/format';
 import { getOverall } from '@/helpers/OverallCalculator';
+import { useModals } from '@/hooks/useModals';
 import { usePlayerUpdate } from '@/hooks/usePlayers';
 import { Player } from '@/types/FullTypes';
 import React, { useState } from 'react';
-import { Modal, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import ImpactPlayer from './ImpactPlayer';
 
 interface PlayerDetailsProps {
@@ -14,76 +16,50 @@ interface PlayerDetailsProps {
 
 const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player: initialPlayer, onBack }) => {
   const { updateBasicInfo, updateSkill, loading: updateLoading } = usePlayerUpdate();
-  
-  // Local state to track player changes
   const [player, setPlayer] = useState<Player>(initialPlayer);
   
-  // Modal states for editing
-  const [editingField, setEditingField] = useState<{
-    field: string;
-    currentValue: string | number;
-    type: 'basic' | 'skill';
-  } | null>(null);
-  const [editValue, setEditValue] = useState('');
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  
-  // Success/Error modals
-  const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [modalMessage, setModalMessage] = useState('');
-
-  const showSuccess = (message: string) => {
-    setModalMessage(message);
-    setSuccessModalVisible(true);
-    setTimeout(() => setSuccessModalVisible(false), 2000);
-  };
-
-  const showError = (message: string) => {
-    setModalMessage(message);
-    setErrorModalVisible(true);
-  };
+  const {
+    successModal,
+    errorModal,
+    editModal,
+    editValue,
+    showSuccess,
+    hideSuccess,
+    showError,
+    hideError,
+    showEdit,
+    hideEdit,
+    setEditValue
+  } = useModals();
 
   const handleEditField = (field: string, currentValue: string | number, type: 'basic' | 'skill') => {
-    setEditingField({ field, currentValue, type });
-    setEditValue(currentValue.toString());
-    setEditModalVisible(true);
+    showEdit(field, currentValue, type);
   };
 
   const confirmEdit = async () => {
-    if (!editingField) return;
+    if (!editModal.field) return;
 
-    const { field, type } = editingField;
+    const { field, type } = editModal;
     const newValue = type === 'skill' ? parseInt(editValue) : editValue;
 
-    setEditModalVisible(false);
+    hideEdit();
 
     try {
       if (type === 'basic') {
         const updatedPlayer = await updateBasicInfo(player.id, field, newValue);
         if (updatedPlayer) {
-          // Update local state immediately
-          setPlayer(prev => ({
-            ...prev,
-            [field]: newValue
-          }));
+          setPlayer(prev => ({ ...prev, [field]: newValue }));
         }
       } else {
         const updatedPlayer = await updateSkill(player.id, field, newValue as number);
         if (updatedPlayer) {
-          // Update local state immediately
-          setPlayer(prev => ({
-            ...prev,
-            [field]: newValue
-          }));
+          setPlayer(prev => ({ ...prev, [field]: newValue }));
         }
       }
       showSuccess(`${field} updated successfully`);
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Failed to update player');
     }
-
-    setEditingField(null);
-    setEditValue('');
   };
 
   // Group skills by category
@@ -259,15 +235,6 @@ const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player: initialPlayer, on
               </View>
             )}
 
-            {player.salary1 && (
-              <TouchableOpacity 
-                style={styles.basicInfoItem}
-                onPress={() => handleEditField('salary1', player.salary1 || 0, 'basic')}
-              >
-                <Text style={styles.basicInfoLabel}>Salary</Text>
-                <Text style={styles.basicInfoValue}>${player.salary1.toLocaleString()}</Text>
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -277,84 +244,30 @@ const PlayerDetails: React.FC<PlayerDetailsProps> = ({ player: initialPlayer, on
         )}
       </ScrollView>
 
-      {/* Edit Modal */}
-      <Modal
-        visible={editModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit {editingField?.field}</Text>
-            <Text style={styles.modalSubtitle}>{editingField?.type} field</Text>
-            <TextInput
-              style={styles.textInput}
-              value={editValue}
-              onChangeText={setEditValue}
-              placeholder={`Enter ${editingField?.field}`}
-              autoFocus
-              keyboardType={editingField?.type === 'skill' ? 'numeric' : 'default'}
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  setEditModalVisible(false);
-                  setEditingField(null);
-                  setEditValue('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={confirmEdit}
-                disabled={updateLoading}
-              >
-                <Text style={styles.confirmButtonText}>
-                  {updateLoading ? 'Saving...' : 'Save'}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/*  Modals */}
+      <EditModal
+        visible={editModal.visible}
+        title={editModal.field}
+        subtitle={`${editModal.type} field`}
+        value={editValue}
+        onValueChange={setEditValue}
+        onConfirm={confirmEdit}
+        onCancel={hideEdit}
+        keyboardType={editModal.type === 'skill' ? 'numeric' : 'default'}
+        loading={updateLoading}
+      />
 
-      {/* Success Modal */}
-      <Modal
-        visible={successModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.successModal]}>
-            <Text style={styles.successIcon}>✅</Text>
-            <Text style={styles.modalTitle}>Success</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-          </View>
-        </View>
-      </Modal>
+      <SuccessModal
+        visible={successModal.visible}
+        message={successModal.message}
+        onClose={hideSuccess}
+      />
 
-      {/* Error Modal */}
-      <Modal
-        visible={errorModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.errorModal]}>
-            <Text style={styles.errorIcon}>❌</Text>
-            <Text style={styles.modalTitle}>Error</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-            <TouchableOpacity
-              style={styles.okButton}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.okButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <ErrorModal
+        visible={errorModal.visible}
+        message={errorModal.message}
+        onClose={hideError}
+      />
     </View>
   );
 };
@@ -553,111 +466,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
 
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    minWidth: 300,
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
-    textTransform: 'capitalize',
-  },
-  modalMessage: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
-    lineHeight: 22,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  okButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  okButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 20,
-    fontSize: 16,
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-  },
-  successModal: {
-    borderColor: '#34C759',
-    borderWidth: 2,
-  },
-  errorModal: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
-  },
-  successIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
+
 });
 
 export default PlayerDetails;

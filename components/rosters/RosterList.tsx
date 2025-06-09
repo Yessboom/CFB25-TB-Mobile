@@ -1,36 +1,31 @@
+import { ConfirmationModal, EditModal, ErrorModal, SuccessModal } from '@/components/SpecificModal';
+import { useModals } from '@/hooks/useModals';
 import { useRosters } from '@/hooks/useRosters';
 import { Roster } from '@/types/FullTypes';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
-import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const RosterListScreen = () => {
   const { rosters, loading, error, deleteRoster, updateRoster } = useRosters();
   const router = useRouter();
+  
+  // Use the modals hook
+  const {
+    successModal,
+    errorModal,
+    showSuccess,
+    hideSuccess,
+    showError,
+    hideError,
+  } = useModals();
+
+  // Local state for specific modals
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
-  
-  // Modal states
-  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
-  const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
-  
-  // Modal content
-  const [modalMessage, setModalMessage] = useState('');
   const [pendingDelete, setPendingDelete] = useState<{rosterId: string, name: string} | null>(null);
-
-  const showSuccess = (message: string) => {
-    setModalMessage(message);
-    setSuccessModalVisible(true);
-    // Auto-hide after 2 seconds
-    setTimeout(() => setSuccessModalVisible(false), 2000);
-  };
-
-  const showError = (message: string) => {
-    setModalMessage(message);
-    setErrorModalVisible(true);
-  };
 
   const handleRosterPress = (rosterId: string) => {
     console.log('🔍 Navigating to roster:', rosterId);
@@ -40,7 +35,6 @@ const RosterListScreen = () => {
       return;
     }
     
-    // Navigate to the roster details page
     router.push(`/rosterDetails?rosterId=${rosterId}`);
   };
 
@@ -87,6 +81,17 @@ const RosterListScreen = () => {
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Failed to update roster');
     }
+  };
+
+  const handleEditCancel = () => {
+    setEditModalVisible(false);
+    setEditingId(null);
+    setEditingName('');
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalVisible(false);
+    setPendingDelete(null);
   };
 
   const renderRoster = ({ item }: { item: Roster }) => (
@@ -144,116 +149,45 @@ const RosterListScreen = () => {
         contentContainerStyle={styles.list}
       />
 
-      {/* Delete Confirmation Modal */}
-      <Modal
-        visible={deleteModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete Roster</Text>
-            <Text style={styles.modalMessage}>
-              Are you sure you want to delete &quot;{pendingDelete?.name}&quot;?
-            </Text>
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  setDeleteModalVisible(false);
-                  setPendingDelete(null);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={confirmDelete}
-              >
-                <Text style={styles.confirmButtonText}>Delete</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
       {/* Edit Modal */}
-      <Modal
+      <EditModal
         visible={editModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Roster Name</Text>
-            <TextInput
-              style={styles.textInput}
-              value={editingName}
-              onChangeText={setEditingName}
-              placeholder="Enter roster name"
-              autoFocus
-            />
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={() => {
-                  setEditModalVisible(false);
-                  setEditingId(null);
-                  setEditingName('');
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={confirmEdit}
-              >
-                <Text style={styles.confirmButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="Roster Name"
+        value={editingName}
+        onValueChange={setEditingName}
+        onConfirm={confirmEdit}
+        onCancel={handleEditCancel}
+        placeholder="Enter roster name"
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        visible={deleteModalVisible}
+        title="Delete Roster"
+        message={`Are you sure you want to delete "${pendingDelete?.name}"?`}
+        onConfirm={confirmDelete}
+        onCancel={handleDeleteCancel}
+        confirmText="Delete"
+        cancelText="Cancel"
+        confirmButtonStyle="danger"
+      />
 
       {/* Success Modal */}
-      <Modal
-        visible={successModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.successModal]}>
-            <Text style={styles.successIcon}>✅</Text>
-            <Text style={styles.modalTitle}>Success</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-          </View>
-        </View>
-      </Modal>
+      <SuccessModal
+        visible={successModal.visible}
+        message={successModal.message}
+        onClose={hideSuccess}
+      />
 
       {/* Error Modal */}
-      <Modal
-        visible={errorModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.errorModal]}>
-            <Text style={styles.errorIcon}>❌</Text>
-            <Text style={styles.modalTitle}>Error</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-            <TouchableOpacity
-              style={styles.okButton}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.okButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <ErrorModal
+        visible={errorModal.visible}
+        message={errorModal.message}
+        onClose={hideError}
+      />
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {
@@ -338,106 +272,6 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     textAlign: 'center',
     fontSize: 16,
-  },
-  
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    minWidth: 300,
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
-  modalMessage: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
-    lineHeight: 22,
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  okButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  okButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 12,
-    marginBottom: 20,
-    fontSize: 16,
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-  },
-  successModal: {
-    borderColor: '#34C759',
-    borderWidth: 2,
-  },
-  errorModal: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
-  },
-  successIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 8,
   },
 });
 

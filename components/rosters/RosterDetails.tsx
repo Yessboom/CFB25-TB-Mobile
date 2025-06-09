@@ -187,12 +187,10 @@ const RosterDetailScreen: React.FC<RosterDetailScreenProps> = ({ rosterId, onBac
       </Modal>
 
       {/* Success/Error Modals */}
-      {/* Add your existing success and error modals here */}
     </View>
   );
 };
 
-// Add your existing styles here...
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
 
 
+
 const RosterDetailPage = () => {
     const {rosterId} = useLocalSearchParams<{rosterId: string}>();
     const router = useRouter();

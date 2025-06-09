@@ -1,5 +1,3 @@
-// src/types/api.ts (in your React app)
-
 // Base entity types
 export interface User {
   userId: string;

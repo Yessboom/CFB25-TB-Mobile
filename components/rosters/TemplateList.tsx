@@ -1,33 +1,28 @@
+import { EditModal, ErrorModal, SuccessModal } from '@/components/SpecificModal';
+import { useModals } from '@/hooks/useModals';
 import { useRosters, useTemplates } from '@/hooks/useRosters';
 import { Roster } from '@/types/FullTypes';
 import React, { useState } from 'react';
-import { FlatList, Modal, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const TemplateListScreen = () => {
   const { templates, loading, error } = useTemplates();
   const { createRoster } = useRosters();
 
-  // Modal states
+  // Use the modals hook
+  const {
+    successModal,
+    errorModal,
+    showSuccess,
+    hideSuccess,
+    showError,
+    hideError,
+  } = useModals();
+
+  // Local state for create modal
   const [createModalVisible, setCreateModalVisible] = useState(false);
-  const [successModalVisible, setSuccessModalVisible] = useState(false);
-  const [errorModalVisible, setErrorModalVisible] = useState(false);
-  
-  // Modal content
   const [selectedTemplate, setSelectedTemplate] = useState<Roster | null>(null);
   const [rosterName, setRosterName] = useState('');
-  const [modalMessage, setModalMessage] = useState('');
-
-  const showSuccess = (message: string) => {
-    setModalMessage(message);
-    setSuccessModalVisible(true);
-    // Auto-hide after 2 seconds
-    setTimeout(() => setSuccessModalVisible(false), 2000);
-  };
-
-  const showError = (message: string) => {
-    setModalMessage(message);
-    setErrorModalVisible(true);
-  };
 
   const handleCreateFromTemplate = (template: Roster) => {
     setSelectedTemplate(template);
@@ -63,7 +58,7 @@ const TemplateListScreen = () => {
     <View style={styles.templateItem}>
       <View style={styles.templateInfo}>
         <Text style={styles.templateName}>{item.name || 'Unnamed Template'}</Text>
-        <Text style={styles.templateCreator}>id {item.rosterId || 'Unknown'}</Text>
+        <Text style={styles.templateCreator}>ID: {item.rosterId || 'Unknown'}</Text>
         <Text style={styles.playerCount}>{item.players?.length || 0} players</Text>
       </View>
       <TouchableOpacity
@@ -104,83 +99,30 @@ const TemplateListScreen = () => {
       />
 
       {/* Create Roster Modal */}
-      <Modal
+      <EditModal
         visible={createModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Roster</Text>
-            <Text style={styles.modalSubtitle}>
-              Based on: &quot;{selectedTemplate?.name || 'Template'}&quot;
-            </Text>
-            
-            <View style={styles.inputGroup}>
-              <Text style={styles.inputLabel}>Roster Name:</Text>
-              <TextInput
-                style={styles.textInput}
-                value={rosterName}
-                onChangeText={setRosterName}
-                placeholder="Enter roster name"
-                autoFocus
-                selectTextOnFocus
-              />
-            </View>
-
-            <View style={styles.modalButtons}>
-              <TouchableOpacity
-                style={styles.cancelButton}
-                onPress={cancelCreate}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmButton}
-                onPress={confirmCreate}
-              >
-                <Text style={styles.confirmButtonText}>Create</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+        title="Create New Roster"
+        subtitle={`Based on: "${selectedTemplate?.name || 'Template'}"`}
+        value={rosterName}
+        onValueChange={setRosterName}
+        onConfirm={confirmCreate}
+        onCancel={cancelCreate}
+        placeholder="Enter roster name"
+      />
 
       {/* Success Modal */}
-      <Modal
-        visible={successModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.successModal]}>
-            <Text style={styles.successIcon}>✅</Text>
-            <Text style={styles.modalTitle}>Success</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-          </View>
-        </View>
-      </Modal>
+      <SuccessModal
+        visible={successModal.visible}
+        message={successModal.message}
+        onClose={hideSuccess}
+      />
 
       {/* Error Modal */}
-      <Modal
-        visible={errorModalVisible}
-        transparent={true}
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, styles.errorModal]}>
-            <Text style={styles.errorIcon}>❌</Text>
-            <Text style={styles.modalTitle}>Error</Text>
-            <Text style={styles.modalMessage}>{modalMessage}</Text>
-            <TouchableOpacity
-              style={styles.okButton}
-              onPress={() => setErrorModalVisible(false)}
-            >
-              <Text style={styles.okButtonText}>OK</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
+      <ErrorModal
+        visible={errorModal.visible}
+        message={errorModal.message}
+        onClose={hideError}
+      />
     </View>
   );
 };
@@ -259,125 +201,6 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     textAlign: 'center',
     fontSize: 16,
-  },
-
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 20,
-    minWidth: 320,
-    maxWidth: 400,
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: '#333',
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 20,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-  modalMessage: {
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 20,
-    color: '#666',
-    lineHeight: 22,
-  },
-  inputGroup: {
-    width: '100%',
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-  },
-  textInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 6,
-    padding: 12,
-    fontSize: 16,
-    width: '100%',
-    backgroundColor: '#f9f9f9',
-  },
-  modalButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    width: '100%',
-    justifyContent: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#f0f0f0',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    flex: 1,
-    alignItems: 'center',
-  },
-  cancelButtonText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#34C759',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    flex: 1,
-    alignItems: 'center',
-  },
-  confirmButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  okButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 6,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  okButtonText: {
-    color: 'white',
-    fontWeight: '600',
-  },
-  successModal: {
-    borderColor: '#34C759',
-    borderWidth: 2,
-  },
-  errorModal: {
-    borderColor: '#FF3B30',
-    borderWidth: 2,
-  },
-  successIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  errorIcon: {
-    fontSize: 48,
-    marginBottom: 8,
   },
 });
 
