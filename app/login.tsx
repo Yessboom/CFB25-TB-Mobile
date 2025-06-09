@@ -45,7 +45,7 @@ const LoginPage = () => {
       
       if (success) {
         // Navigation will be handled automatically by auth state change
-        router.replace('/(tabs)');
+        router.replace('/(tabs)/myRosters');
       } else {
         setError('Invalid username or password');
       }
