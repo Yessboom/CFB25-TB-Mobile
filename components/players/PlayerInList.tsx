@@ -9,13 +9,11 @@ import ImpactPlayer from './ImpactPlayer';
 
 interface PlayerInListProps {
   player: Player;
-  onEditField?: (playerId: string, field: string, currentValue: string | number, type: 'basic' | 'skill') => void;
   onPlayerPress?: (playerId: string) => void;
 }
 
 const PlayerInList: React.FC<PlayerInListProps> = ({ 
   player, 
-  onEditField, 
   onPlayerPress 
 }) => {
   const router = useRouter();
@@ -34,7 +32,6 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
     <TouchableOpacity 
       key={skillName}
       style={[styles.skillItem, { backgroundColor: getSkillBackgroundColor(skillValue) }]}
-      onPress={() => onEditField?.(player.id, skillName.toLowerCase(), skillValue, 'skill')} // Use player.id
     >
       <Text style={[styles.skillName, { color: getSkillValueColor(skillValue) }]}>
         {skillName}
@@ -78,7 +75,6 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
       <View style={styles.playerBasicInfo}>
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.id, 'position', player.position || '', 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Position:</Text>
           <Text style={styles.infoValue}>{getPositionName(player.position)}</Text>
@@ -86,7 +82,6 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
         
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.id, 'age', player.age || 0, 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Age:</Text>
           <Text style={styles.infoValue}>{player.age || 'N/A'}</Text>
@@ -94,7 +89,6 @@ const PlayerInList: React.FC<PlayerInListProps> = ({
 
         <TouchableOpacity 
           style={styles.infoItem}
-          onPress={() => onEditField?.(player.id, 'jerseyNumber', player.jerseyNumber || 0, 'basic')} // Use player.id
         >
           <Text style={styles.infoLabel}>Jersey #:</Text>
           <Text style={styles.infoValue}>{player.jerseyNumber || 'N/A'}</Text>
