@@ -1,27 +1,30 @@
-// hooks/useRosters.ts
 import { rosterService } from '@/api/roster';
 import { CreateRosterForm, Roster } from '@/types/FullTypes';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 export const useRosters = () => {
   const [rosters, setRosters] = useState<Roster[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchRosters = async () => {
+  const fetchRosters = useCallback(async () => {
+    console.log('🔄 Fetching rosters...'); // Add debug log
     setLoading(true);
-    setError(null);
-    
-    const response = await rosterService.getUserRosters();
-    
-    if (response.success && response.rosters) {
-      setRosters(response.rosters);
-    } else {
-      setError(response.error || 'Failed to fetch rosters');
+    try {
+      const  response = await rosterService.getUserRosters();
+      console.log('📡 Fetch rosters response:', { response}); // Add debug log
+      if (response.success) setRosters(response.rosters!);
+      else setError(response.error|| 'Failed to fetch rosters');
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchRosters();
+  }, [fetchRosters]);
 
   const createRoster = async (templateId: string, rosterName: string) => {
     console.log('🔄 Creating roster with:', { templateId, rosterName }); // Add debug log
@@ -68,9 +71,7 @@ export const useRosters = () => {
     }
   };
 
-  useEffect(() => {
-    fetchRosters();
-  }, []);
+
 
   return {
     rosters,
@@ -79,7 +80,8 @@ export const useRosters = () => {
     fetchRosters,
     createRoster,
     updateRoster,
-    deleteRoster
+    deleteRoster,
+    refetch: fetchRosters
   };
 };
 

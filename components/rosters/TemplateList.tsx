@@ -2,8 +2,9 @@ import { EditModal, ErrorModal, SuccessModal } from '@/components/SpecificModal'
 import { useModals } from '@/hooks/useModals';
 import { useRosters, useTemplates } from '@/hooks/useRosters';
 import { Roster } from '@/types/FullTypes';
-import React, { useState } from 'react';
-import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Accelerometer } from 'expo-sensors';
+import React, { useCallback, useEffect, useState } from 'react';
+import { FlatList, Platform, StyleSheet, Text, TouchableOpacity, Vibration, View } from 'react-native';
 
 const TemplateListScreen = () => {
   const { templates, loading, error } = useTemplates();
@@ -24,6 +25,115 @@ const TemplateListScreen = () => {
   const [selectedTemplate, setSelectedTemplate] = useState<Roster | null>(null);
   const [rosterName, setRosterName] = useState('');
 
+
+
+//THE SHUFFLING ON SHAKE DETECTION HERE HAS NOT POINT WHATSOEVER EXCPET THAT IT'S PART OF THE CLASS REQUIREMENTS.
+//IT HASN'T BEEN TESTED ON MOBILE, BUT IT SHOULD WORK I HOPE. 
+  // State for shuffled templates
+  const [shuffledTemplates, setShuffledTemplates] = useState<Roster[]>([]);
+  const [lastShakeTime, setLastShakeTime] = useState(0);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+
+
+  // Detect if running on desktop/web
+  useEffect(() => {
+    setIsDesktop(Platform.OS === 'web');
+    console.log('📱 Platform detected:', Platform.OS);
+  }, []);
+
+  // Initialize shuffled templates when templates load
+  useEffect(() => {
+    if (templates) {
+      setShuffledTemplates([...templates]);
+    }
+  }, [templates]);
+
+  // Shake detection setup (mobile only)
+  useEffect(() => {
+    if (isDesktop) return; // Skip on desktop
+
+    let subscription: any;
+
+    const setupAccelerometer = async () => {
+      try {
+        subscription = Accelerometer.addListener(({ x, y, z }) => {
+          const magnitude = Math.sqrt(x * x + y * y + z * z);
+          const shakeThreshold = 1.5;
+          const now = Date.now();
+          const timeSinceLastShake = now - lastShakeTime;
+          
+          if (magnitude > shakeThreshold && timeSinceLastShake > 1000) {
+            console.log('📱 Shake detected! Shuffling templates...');
+            handleShuffle();
+            setLastShakeTime(now);
+          }
+        });
+
+        Accelerometer.setUpdateInterval(100);
+      } catch (error) {
+        console.log('Accelerometer not available:', error);
+      }
+    };
+
+    setupAccelerometer();
+
+    return () => subscription?.remove();
+  }, [lastShakeTime, shuffledTemplates, isDesktop]);
+
+
+  // Shuffle function 
+  const handleShuffle = useCallback(() => {
+    if (templates && templates.length > 0) {
+      const shuffled = [...templates].sort(() => Math.random() - 0.5);
+      setShuffledTemplates(shuffled);
+      
+      // Provide haptic feedback (mobile only)
+      if (!isDesktop && Platform.OS !== 'web') {
+        Vibration.vibrate(100);
+      }
+      
+      // Show success message
+      showSuccess('Templates shuffled! 🎲');
+      
+      console.log('🎲 Templates shuffled');
+    }
+  }, [templates, isDesktop, showSuccess]);
+
+    // Desktop keyboard shortcuts
+useEffect(() => {
+  console.log('🔑 Setting up keyboard shortcuts for desktop');
+  if (!isDesktop) return;
+
+  const handleKeyPress = (event: KeyboardEvent) => {
+    console.log('🔑 Key pressed:', event.key, event.code); // Add this debug line
+    
+    // Shuffle on Space bar or 'S' key
+    if (event.code === 'Space' || event.key.toLowerCase() === 's') {
+      console.log('🎲 Space/S key detected, shuffling...');
+      event.preventDefault();
+      handleShuffle();
+    }
+    // Shuffle on 'R' key (for "random")
+    if (event.key.toLowerCase() === 'r') {
+      console.log('🎲 R key detected, shuffling...');
+      event.preventDefault();
+      handleShuffle();
+    }
+  };
+
+  if (typeof window !== 'undefined') {
+    console.log('🔑 Adding keyboard listener');
+    window.addEventListener('keydown', handleKeyPress);
+    
+    return () => {
+      console.log('🔑 Removing keyboard listener');
+      window.removeEventListener('keydown', handleKeyPress);
+    };
+  }
+}, [isDesktop, handleShuffle]);
+
+
   const handleCreateFromTemplate = (template: Roster) => {
     setSelectedTemplate(template);
     setRosterName(`${template.name || 'Unnamed Template'} - Copy`);
@@ -41,6 +151,7 @@ const TemplateListScreen = () => {
     try {
       await createRoster(selectedTemplate.rosterId, rosterName.trim());
       showSuccess('Roster created successfully');
+      
       setSelectedTemplate(null);
       setRosterName('');
     } catch (err) {
@@ -91,12 +202,30 @@ const TemplateListScreen = () => {
       <Text style={styles.title}>Roster Templates</Text>
       <Text style={styles.subtitle}>Create new rosters from these templates</Text>
       
+      {/* Dynamic hint based on platform */}
+      {isDesktop ? (
+        <Text style={styles.shakeHint}>
+          💡 Press Space, S, or R to shuffle templates!
+        </Text>
+      ) : (
+        <Text style={styles.shakeHint}>
+          💡 Shake your phone to shuffle templates!
+        </Text>
+      )}
+      
       <FlatList
-        data={templates}
+        data={shuffledTemplates}
         keyExtractor={(item) => item.rosterId}
         renderItem={renderTemplate}
         contentContainerStyle={styles.list}
       />
+
+      {/* Manual shuffle button - works on all platforms */}
+      <TouchableOpacity style={styles.shuffleButton} onPress={handleShuffle}>
+        <Text style={styles.shuffleButtonText}>
+          🎲 Shuffle Templates {isDesktop ? '(Space/S/R)' : ''}
+        </Text>
+      </TouchableOpacity>
 
       {/* Create Roster Modal */}
       <EditModal
@@ -147,10 +276,17 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#666',
+    marginBottom: 8,
+  },
+  shakeHint: {
+    fontSize: 14,
+    color: '#007AFF',
     marginBottom: 16,
+    textAlign: 'center',
+    fontStyle: 'italic',
   },
   list: {
-    paddingBottom: 16,
+    paddingBottom: 80, // Space for shuffle button
   },
   templateItem: {
     backgroundColor: 'white',
@@ -195,6 +331,21 @@ const styles = StyleSheet.create({
   createButtonText: {
     color: 'white',
     fontSize: 14,
+    fontWeight: 'bold',
+  },
+  shuffleButton: {
+    position: 'absolute',
+    bottom: 16,
+    left: 16,
+    right: 16,
+    backgroundColor: '#FF9500',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  shuffleButtonText: {
+    color: 'white',
+    fontSize: 16,
     fontWeight: 'bold',
   },
   error: {

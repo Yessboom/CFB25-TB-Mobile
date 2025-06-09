@@ -2,15 +2,32 @@ import { ConfirmationModal, EditModal, ErrorModal, SuccessModal } from '@/compon
 import { useModals } from '@/hooks/useModals';
 import { useRosters } from '@/hooks/useRosters';
 import { Roster } from '@/types/FullTypes';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import React, { useCallback, useState } from 'react';
 import { FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const RosterListScreen = () => {
-  const { rosters, loading, error, deleteRoster, updateRoster } = useRosters();
+  const { rosters, loading, error, deleteRoster, updateRoster, refetch } = useRosters();
+  console.log('🎯 RosterListScreen render:', { 
+    rostersCount: rosters?.length || 0, 
+    loading, 
+    error,
+    hasRosters: !!rosters
+  });
+  useFocusEffect( useCallback(() => {
+    console.log('🔄 Refetching rosters...');
+    refetch();
+  }, [refetch])); //used to refetch when I go to myRosters after creating a new one. 
+
+
+
+
   const router = useRouter();
+
+
+
   
-  // Use the modals hook
+  
   const {
     successModal,
     errorModal,
@@ -18,6 +35,7 @@ const RosterListScreen = () => {
     hideSuccess,
     showError,
     hideError,
+
   } = useModals();
 
   // Local state for specific modals
@@ -140,7 +158,7 @@ const RosterListScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Rosters ({rosters.length})</Text>
+      <Text style={styles.title}>My Rosters </Text>
       
       <FlatList
         data={rosters}
